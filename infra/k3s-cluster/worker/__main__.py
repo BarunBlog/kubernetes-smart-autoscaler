@@ -38,6 +38,7 @@ cluster_node_role_name = common_ref.get_output("cluster_node_role_name")
 # Now pull outputs from master project
 target_group_arn = master_ref.get_output("target_group_arn")
 alb_dns_name = master_ref.get_output("alb_dns")
+master_private_ip = master_ref.get_output("master_private_ip")
 
 
 # Get the directory where __main__.py is located
@@ -179,26 +180,42 @@ role_policy = aws.iam.RolePolicy("lambda-scaling-policy",
     })
 )
 
+# iam role policy to include VPC Access for the Lambda
+vpc_access_policy_attachment = aws.iam.RolePolicyAttachment("lambda-vpc-access",
+    role=lambda_role.name,
+    policy_arn="arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+)
+
 # Creating The Lambda Function
 scaling_lambda = aws.lambda_.Function("cluster-autoscaler",
     role=lambda_role.arn,
     runtime="python3.11",
     handler="main.handler", # The auto-scaling repo must use this filename/function
     # This creates a dummy 'main.py' so Pulumi can finish without the local files
+    vpc_config=aws.lambda_.FunctionVpcConfigArgs(
+        subnet_ids=[private_subnet_id],
+        security_group_ids=[security_group_id],
+    ),
     code=pulumi.AssetArchive({
         "main.py": pulumi.StringAsset("def handler(event, context): print('Placeholder code')")
     }),
     environment={
-        # TODO: Change the Lambda config and put inside VPC and private subnet
         "variables": {
-            "PROMETHEUS_URL": alb_dns_name.apply(lambda dns: f"http://{dns}/prometheus"),
+            "PROMETHEUS_URL": f"http://{master_private_ip}:30090/prometheus",
             "BUCKET_NAME": s3_bucket_id,
             "DYNAMO_TABLE": scaling_table.name,
             "ASG_NAME": worker_asg.name,
             "MIN_NODES": min_nodes,
             "MAX_NODES": max_nodes,
         }
-    }
+    },
+    opts=pulumi.ResourceOptions(depends_on=[vpc_access_policy_attachment])
+)
+
+# Add Lambda Function Url to allow the k3s CronJob to trigger it
+lambda_url = aws.lambda_.FunctionUrl("autoscaler-url",
+     function_name=scaling_lambda.name,
+     authorization_type="NONE",
 )
 
 # Policy required by EBS CSI
@@ -243,3 +260,4 @@ pulumi.export("dynamo_table", scaling_table.name)
 pulumi.export("lambda_function_name", scaling_lambda.name)
 pulumi.export("ebs_csi_policy_arn", ebs_csi_policy.arn)
 # pulumi.export("nth_queue_url", nth_queue.id)
+pulumi.export("lambda_url", lambda_url.function_url)
