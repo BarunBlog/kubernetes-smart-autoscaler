@@ -186,6 +186,8 @@ vpc_access_policy_attachment = aws.iam.RolePolicyAttachment("lambda-vpc-access",
     policy_arn="arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 )
 
+prometheus_url = master_private_ip.apply(lambda ip: f"http://{ip}:30090/prometheus")
+
 # Creating The Lambda Function
 scaling_lambda = aws.lambda_.Function("cluster-autoscaler",
     role=lambda_role.arn,
@@ -201,7 +203,7 @@ scaling_lambda = aws.lambda_.Function("cluster-autoscaler",
     }),
     environment={
         "variables": {
-            "PROMETHEUS_URL": f"http://{master_private_ip}:30090/prometheus",
+            "PROMETHEUS_URL": prometheus_url,
             "BUCKET_NAME": s3_bucket_id,
             "DYNAMO_TABLE": scaling_table.name,
             "ASG_NAME": worker_asg.name,
