@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: smartscale-lambda-trigger
+  namespace: kube-system
+spec:
+  schedule: "*/2 * * * *" # Every 2 minutes
+  concurrencyPolicy: Forbid # Prevents a new job starting if the old one is still running
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: trigger
+            image: curlimages/curl:latest
+            args:
+            - -X
+            - POST
+            - {{ lambda_url }}
+            - -H
+            - "Content-Type: application/json"
+            - -d
+            - '{"source": "k3s-cronjob"}'
+          restartPolicy: OnFailure

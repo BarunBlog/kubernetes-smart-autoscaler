@@ -43,11 +43,13 @@ jobs:
           MASTER_NODE_IP=$(pulumi stack output master_private_ip --cwd infra/k3s-cluster/master -s dev)
           ALB_DNS=$(pulumi stack output alb_dns --cwd infra/k3s-cluster/master -s dev)
           # SQS_URL=$(pulumi stack output nth_queue_url --cwd infra/k3s-cluster/worker -s dev)
+          LAMBDA_URL=$(pulumi stack output lambda_url --cwd infra/k3s-cluster/worker -s dev)
           
           echo "GIT_RUNNER_IP=$GIT_RUNNER_IP" >> $GITHUB_ENV
           echo "MASTER_NODE_IP=$MASTER_NODE_IP" >> $GITHUB_ENV
           echo "ALB_DNS=$ALB_DNS" >> $GITHUB_ENV
           # echo "SQS_URL=$SQS_URL" >> $GITHUB_ENV
+          echo "LAMBDA_URL=$LAMBDA_URL" >> $GITHUB_ENV
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
@@ -56,10 +58,13 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Inject ALB DNS into Manifests
+      - name: Inject Dynamic Values into Manifests
         run: |
           # Use sed to replace the placeholder in all ingress files inside the directory
           find ./k8s-manifests/ingress -type f -name "*.yaml" -exec sed -i "s/{{ alb_dns_name }}/${{ env.ALB_DNS }}/g" {} +
+          
+          # Inject Lambda URL into the lambda trigger manifest
+          sed -i "s|{{ lambda_url }}|${{ env.LAMBDA_URL }}|g" ./k8s-manifests/autoscaler/lambda-trigger.yaml
           
           # Verify replacement (optional debug)
           echo "Verifying DNS injection in prometheus-ingress.yaml:"
@@ -222,6 +227,9 @@ jobs:
             
             # Apply Ingresses
             kubectl apply -f ingress/
+          
+            # Apply the Lambda Trigger
+            kubectl apply -f autoscaler/
           
             # Delete the key once done
             rm -rf ~/.kube/config
