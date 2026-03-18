@@ -1,16 +1,15 @@
 name: Deploy Smart Scaler to Lambda
 on:
-  workflow_run:
-    workflows: ["Apply Kubernetes Manifests"]
-    types:
-      - completed
+  push:
+    branches:
+      - master
+    paths:
+      - functions/smart-scaler/**
 
   workflow_dispatch:
 
 jobs:
   deploy-smart-scaler:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-
     runs-on: ubuntu-latest
 
     steps:

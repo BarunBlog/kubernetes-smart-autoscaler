@@ -43,6 +43,13 @@ jobs:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: pulumi login
 
+      - name: Prepare Lambda Dependencies
+        run: |
+          cd functions/smart-scaler
+          # Install requirements directly into the src folder
+          # Pulumi will then zip everything in 'src' during 'pulumi up'
+          pip install -r requirements.txt -t ./src
+
       - name: Pulumi Sync and Deploy - Autoscaler
         env:
           PULUMI_PYTHON_CMD: ../../venv/bin/python

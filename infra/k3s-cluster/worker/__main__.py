@@ -186,6 +186,7 @@ vpc_access_policy_attachment = aws.iam.RolePolicyAttachment("lambda-vpc-access",
     policy_arn="arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 )
 
+abs_path_to_func = os.path.join(os.path.dirname(current_dir), "../../../functions/smart-scaler/src")
 prometheus_url = master_private_ip.apply(lambda ip: f"http://{ip}:30090/prometheus")
 
 # Creating The Lambda Function
@@ -193,14 +194,11 @@ scaling_lambda = aws.lambda_.Function("cluster-autoscaler",
     role=lambda_role.arn,
     runtime="python3.11",
     handler="main.handler", # The auto-scaling repo must use this filename/function
-    # This creates a dummy 'main.py' so Pulumi can finish without the local files
     vpc_config=aws.lambda_.FunctionVpcConfigArgs(
         subnet_ids=[private_subnet_id],
         security_group_ids=[security_group_id],
     ),
-    code=pulumi.AssetArchive({
-        "main.py": pulumi.StringAsset("def handler(event, context): print('Placeholder code')")
-    }),
+    code=pulumi.FileArchive(abs_path_to_func),
     environment={
         "variables": {
             "PROMETHEUS_URL": prometheus_url,
