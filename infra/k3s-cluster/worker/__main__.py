@@ -5,6 +5,10 @@ import base64
 import pulumi_aws as aws
 import subprocess
 
+# Find the absolute path to the repo root
+def get_repo_root():
+    return subprocess.check_output(['git', 'rev-parse', '--show-toplevel']).decode('utf-8').strip()
+
 # Initialize the configuration object
 config = pulumi.Config()
 
@@ -187,14 +191,8 @@ vpc_access_policy_attachment = aws.iam.RolePolicyAttachment("lambda-vpc-access",
     policy_arn="arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 )
 
-# current_dir is: /.../infra/k3s-cluster/worker
-current_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Go up 3 levels to reach the root, then down into functions
-abs_path_to_func = os.path.abspath(os.path.join(current_dir, "../../../functions/smart-scaler/src"))
-
-# Add a debug print so you can see the path in the GitHub Actions logs
-print(f"Targeting Lambda source at: {abs_path_to_func}")
+abs_path_to_func = os.path.join(get_repo_root(), "functions/smart-scaler/src")
+pulumi.log.info(f"Packing Lambda from: {abs_path_to_func}")
 
 prometheus_url = master_private_ip.apply(lambda ip: f"http://{ip}:30090/prometheus")
 
