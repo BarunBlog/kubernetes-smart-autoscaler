@@ -9,6 +9,7 @@ metadata:
     nginx.ingress.kubernetes.io/auth-secret: prometheus-auth
     nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
 spec:
+  ingressClassName: nginx
   rules:
     - host: {{ alb_dns_name }}
       http:
