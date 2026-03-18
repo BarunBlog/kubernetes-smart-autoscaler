@@ -72,7 +72,7 @@ alb = aws.lb.LoadBalancer(
     tags={"Name": "k3s-app-alb"},
 )
 
-# ALB Target Group
+# Create a target group from ALB to Nginx NodePort 30080
 target_group = aws.lb.TargetGroup(
     "alb-k3s-tg",
     port=30080,           # NodePort of ingress-nginx or service
@@ -87,6 +87,13 @@ target_group = aws.lb.TargetGroup(
     tags={"Name": "alb-k3s-tg"},
 )
 
+# Attach the Master Node to the Target Group so ALB can reach Nginx Nodeport
+master_attachment = aws.lb.TargetGroupAttachment("master-tg-attachment",
+    target_group_arn=target_group.arn,
+    target_id=master_instance.id,
+    port=30080  # This must match the NodePort of your ingress-nginx
+)
+
 # ALB Listener
 listener = aws.lb.Listener("http-alb-listener",
     load_balancer_arn=alb.arn,
@@ -96,43 +103,6 @@ listener = aws.lb.Listener("http-alb-listener",
         type="forward",
         target_group_arn=target_group.arn,
     )],
-)
-
-# Create a Target Group for Prometheus
-prom_target_group = aws.lb.TargetGroup("alb-prom-tg",
-    port=30090, # ALB will hit the port of HELM 30090 port
-    protocol="HTTP",
-    vpc_id=vpc_id,
-    health_check=aws.lb.TargetGroupHealthCheckArgs(
-        path="/prometheus/-/healthy", # Prometheus health endpoint
-        port="30090",
-        healthy_threshold=2,
-        unhealthy_threshold=10, # Allow 10 failures before marking 'Unhealthy'
-        interval=30,            # Check every 30 seconds
-        timeout=10,
-    )
-)
-
-# Attach Master Node to this Target Group
-prom_attachment = aws.lb.TargetGroupAttachment("prom-attachment",
-    target_group_arn=prom_target_group.arn,
-    target_id=master_instance.id,
-    port=30090
-)
-
-# Add a Rule to the ALB Listener
-prom_rule = aws.lb.ListenerRule("prom-rule",
-    listener_arn=listener.arn,
-    priority=10,
-    actions=[aws.lb.ListenerRuleActionArgs(
-        type="forward",
-        target_group_arn=prom_target_group.arn,
-    )],
-    conditions=[aws.lb.ListenerRuleConditionArgs(
-        path_pattern=aws.lb.ListenerRuleConditionPathPatternArgs(
-            values=["/prometheus*"],
-        ),
-    )]
 )
 
 # Output the instance IP addresses
