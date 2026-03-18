@@ -3,6 +3,7 @@ import json
 import pulumi
 import base64
 import pulumi_aws as aws
+import subprocess
 
 # Initialize the configuration object
 config = pulumi.Config()
@@ -186,7 +187,9 @@ vpc_access_policy_attachment = aws.iam.RolePolicyAttachment("lambda-vpc-access",
     policy_arn="arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 )
 
-abs_path_to_func = os.path.join(os.path.dirname(current_dir), "../../../functions/smart-scaler/src")
+# Get the git root directory dynamically
+git_root = subprocess.check_output(['git', 'rev-parse', '--show-toplevel']).decode('utf-8').strip()
+abs_path_to_func = os.path.join(git_root, "functions/smart-scaler/src")
 prometheus_url = master_private_ip.apply(lambda ip: f"http://{ip}:30090/prometheus")
 
 # Creating The Lambda Function
