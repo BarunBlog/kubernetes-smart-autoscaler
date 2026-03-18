@@ -187,9 +187,15 @@ vpc_access_policy_attachment = aws.iam.RolePolicyAttachment("lambda-vpc-access",
     policy_arn="arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 )
 
-# Get the git root directory dynamically
-git_root = subprocess.check_output(['git', 'rev-parse', '--show-toplevel']).decode('utf-8').strip()
-abs_path_to_func = os.path.join(git_root, "functions/smart-scaler/src")
+# current_dir is: /.../infra/k3s-cluster/worker
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Go up 3 levels to reach the root, then down into functions
+abs_path_to_func = os.path.abspath(os.path.join(current_dir, "../../../functions/smart-scaler/src"))
+
+# Add a debug print so you can see the path in the GitHub Actions logs
+print(f"Targeting Lambda source at: {abs_path_to_func}")
+
 prometheus_url = master_private_ip.apply(lambda ip: f"http://{ip}:30090/prometheus")
 
 # Creating The Lambda Function
