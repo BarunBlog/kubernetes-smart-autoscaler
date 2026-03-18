@@ -141,6 +141,11 @@ jobs:
             # Add the prometheus repository
             helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
             helm repo update
+          
+            # Create the auth secret using Ingress Nginx Basic Auth
+            sudo apt-get update && sudo apt-get install -y apache2-utils
+            htpasswd -bc auth admin ${{ secrets.PROMETHEUS_PASSWORD }}
+            kubectl create secret generic prometheus-auth -n monitoring --from-file=auth --dry-run=client -o yaml | kubectl apply -f -
             
             helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
               --namespace monitoring --create-namespace \
