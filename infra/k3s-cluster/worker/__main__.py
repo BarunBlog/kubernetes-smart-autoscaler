@@ -209,7 +209,7 @@ scaling_lambda = aws.lambda_.Function("cluster-autoscaler",
     environment={
         "variables": {
             "PROMETHEUS_URL": prometheus_url,
-            "BUCKET_NAME": s3_bucket_id,
+            "S3_BUCKET_NAME": s3_bucket_id,
             "DYNAMO_TABLE": scaling_table.name,
             "ASG_NAME": worker_asg.name,
             "MIN_NODES": min_nodes,

@@ -46,9 +46,14 @@ jobs:
       - name: Prepare Lambda Dependencies
         run: |
           cd functions/smart-scaler
-          # Install requirements directly into the src folder
-          # Pulumi will then zip everything in 'src' during 'pulumi up'
-          pip install -r requirements.txt -t ./src
+          # Use the official AWS Lambda Python 3.11 image to build dependencies
+          # This ensures the compiled binaries (like cryptography) match the Lambda OS
+          docker run --rm -v $(pwd):/var/task public.ecr.aws/sam/build-python3.11:latest \
+            pip install -r requirements.txt -t ./src/
+          
+          # Optional: Clean up __pycache__ and dist-info to save space
+          find ./src -type d -name "__pycache__" -exec rm -rf {} +
+          find ./src -type d -name "*.dist-info" -exec rm -rf {} +
 
       - name: Pulumi Sync and Deploy - Autoscaler
         env:
