@@ -2,3 +2,4 @@ requests==2.31.0
 urllib3==2.2.1
 python-dateutil==2.9.0.post0
 jmespath==1.0.1
+kubernetes==29.0.0

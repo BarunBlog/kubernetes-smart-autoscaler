@@ -1,6 +1,7 @@
 import os
 import logging
 from scaler import SmartScaler
+from src.cluster_config import ClusterConfigManager
 from state_manager import StateManager
 from metrics import PrometheusClient
 from typing import Any, Dict
@@ -11,6 +12,7 @@ logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
 DYNAMO_TABLE = os.environ.get('DYNAMO_TABLE')
 state_manager = StateManager(DYNAMO_TABLE) if DYNAMO_TABLE else None
+config_manager = ClusterConfigManager()
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
@@ -29,8 +31,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {"status": "skipped", "message": "Lock active"}
 
     try:
+        # get kubeconfig path
+        kubeconfig_path = config_manager.prepare_config()
+
+        # Initialize the clients
         metrics_client = PrometheusClient()
-        scaler = SmartScaler()
+
+        # Checking if the prometheus is online
+        if not metrics_client.is_ready():
+            logger.warning("Prometheus is not reachable. Cluster might be bootstrapping. Skipping check.")
+            return {"status": "skipped", "message": "Prometheus offline"}
+
+        scaler = SmartScaler(kubeconfig_path)
 
         # Fetching Metrics
         cpu_usage = metrics_client.get_avg_cpu()
@@ -50,7 +62,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "Capacity mismatch detected. Scaling...",
                 extra={"from": current_capacity, "to": recommended_capacity}
             )
-            scaler.apply_scaling(recommended_capacity)
+            scaler.apply_scaling(current_capacity, recommended_capacity)
         else:
             logger.info("Cluster capacity is optimal. No action taken.")
 

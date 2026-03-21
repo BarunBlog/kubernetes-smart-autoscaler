@@ -11,6 +11,15 @@ class PrometheusClient:
         # to ensure the URL doesn't have a trailing slash to avoid // in the API path
         self.url = os.environ['PROMETHEUS_URL'].rstrip('/')
 
+    def is_ready(self) -> bool:
+        """Checks if the Prometheus API is up and reachable"""
+        try:
+            # query the build info or a simple health endpoint
+            response = requests.get(f"{self.url}/-/healthy", timeout=5)
+            return response.status_code == 200
+        except Exception:
+            return False
+
     def query_metric(self, promql_query):
         try:
             response = requests.get(f"{self.url}/api/v1/query", params={'query': promql_query}, timeout=10)
