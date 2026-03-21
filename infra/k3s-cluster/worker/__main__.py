@@ -14,6 +14,9 @@ def get_repo_root():
 # Initialize the configuration object
 config = pulumi.Config()
 
+# Read pulumi secret
+prometheus_password = config.require_secret("prometheus-password")
+
 # Get the current organization and current stack dynamically
 current_org = pulumi.get_organization()
 current_stack = pulumi.get_stack()
@@ -196,7 +199,8 @@ vpc_access_policy_attachment = aws.iam.RolePolicyAttachment("lambda-vpc-access",
 abs_path_to_func = os.path.join(get_repo_root(), "functions/smart-scaler/build_dist")
 pulumi.log.info(f"Packing Lambda from: {abs_path_to_func}")
 
-prometheus_url = master_private_ip.apply(lambda ip: f"http://{ip}:30090")
+# Used the Nginx NodePort (30080) to pass through the ingress nginx
+prometheus_url = master_private_ip.apply(lambda ip: f"http://{ip}:30080/prometheus")
 
 # Creating The Lambda Function
 scaling_lambda = aws.lambda_.Function("cluster-autoscaler",
@@ -213,6 +217,8 @@ scaling_lambda = aws.lambda_.Function("cluster-autoscaler",
     environment={
         "variables": {
             "PROMETHEUS_URL": prometheus_url,
+            "PROMETHEUS_USER": "admin",
+            "PROMETHEUS_PASSWORD": prometheus_password,
             "S3_BUCKET_NAME": s3_bucket_id,
             "DYNAMO_TABLE": scaling_table.name,
             "ASG_NAME": worker_asg.name,

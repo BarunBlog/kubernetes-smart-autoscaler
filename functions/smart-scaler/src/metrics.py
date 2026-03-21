@@ -1,6 +1,7 @@
 import requests
 import os
 import logging
+from requests.auth import HTTPBasicAuth
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -10,12 +11,15 @@ class PrometheusClient:
     def __init__(self):
         # to ensure the URL doesn't have a trailing slash to avoid // in the API path
         self.url = os.environ['PROMETHEUS_URL'].rstrip('/')
+        # Get these from your Lambda Environment variables
+        self.user = os.environ.get("PROMETHEUS_USER", "admin")
+        self.password = os.environ.get("PROMETHEUS_PASSWORD")
 
     def is_ready(self) -> bool:
         """Checks if the Prometheus API is up and reachable"""
         try:
-            # query the build info or a simple health endpoint
-            response = requests.get(f"{self.url}/-/healthy", timeout=5)
+            auth = HTTPBasicAuth(self.user, self.password) if self.user else None
+            response = requests.get(f"{self.url}/-/healthy", auth=auth, timeout=5)
             return response.status_code == 200
         except Exception:
             return False

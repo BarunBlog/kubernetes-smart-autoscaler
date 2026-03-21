@@ -69,7 +69,14 @@ jobs:
       - name: Pulumi Sync and Deploy - Autoscaler
         env:
           PULUMI_PYTHON_CMD: ../../venv/bin/python
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          # Bring the GitHub Secret into the Runner environment
+          PROM_PASS: ${{ secrets.PROMETHEUS_PASSWORD }}
         run: |
           pulumi stack select dev --create --cwd infra/k3s-cluster/worker
+          
+          # Set the Pulumi secret config (This encrypts the secrets in the stack)
+          pulumi config set --secret prometheus-password "$PROM_PASS" --cwd infra/k3s-cluster/worker
+          
           pulumi refresh --yes --cwd infra/k3s-cluster/worker
           pulumi up --yes --cwd infra/k3s-cluster/worker
