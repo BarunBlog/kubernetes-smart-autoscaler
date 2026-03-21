@@ -1,7 +1,7 @@
 import os
 import logging
 from scaler import SmartScaler
-from src.cluster_config import ClusterConfigManager
+from cluster_config import ClusterConfigManager
 from state_manager import StateManager
 from metrics import PrometheusClient
 from typing import Any, Dict
