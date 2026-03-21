@@ -87,6 +87,13 @@ target_group = aws.lb.TargetGroup(
     tags={"Name": "alb-k3s-tg"},
 )
 
+# Attach the Master Node to the Target Group so ALB can reach Nginx NodePort
+master_attachment = aws.lb.TargetGroupAttachment("master-tg-attachment",
+    target_group_arn=target_group.arn,
+    target_id=master_instance.id,
+    port=30080  # This must match the NodePort of ingress-nginx
+)
+
 # ALB Listener
 listener = aws.lb.Listener("http-alb-listener",
     load_balancer_arn=alb.arn,
