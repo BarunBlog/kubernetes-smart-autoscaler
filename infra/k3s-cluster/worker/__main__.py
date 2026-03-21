@@ -266,6 +266,32 @@ aws.iam.RolePolicyAttachment(
     policy_arn=ebs_csi_policy.arn
 )
 
+# Define the S3 Read Policy for the Lambda Function
+s3_read_policy = aws.iam.Policy("lambda-s3-read-policy",
+    description="Allow Lambda to read kubeconfig from S3",
+    policy=s3_bucket_id.apply(lambda id: {
+        "Version": "2012-10-17",
+        "Statement": [{
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:ListBucket",
+                "s3:HeadObject"
+            ],
+            "Resource": [
+                f"arn:aws:s3:::{id}",
+                f"arn:aws:s3:::{id}/*"
+            ]
+        }]
+    })
+)
+
+# Attach it to the existing lambda_role
+s3_policy_attachment = aws.iam.RolePolicyAttachment("lambda-s3-attach",
+    role=lambda_role.name,
+    policy_arn=s3_read_policy.arn
+)
+
 
 pulumi.export("dynamo_table", scaling_table.name)
 pulumi.export("lambda_function_name", scaling_lambda.name)
