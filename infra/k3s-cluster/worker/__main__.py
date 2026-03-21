@@ -193,7 +193,7 @@ vpc_access_policy_attachment = aws.iam.RolePolicyAttachment("lambda-vpc-access",
     policy_arn="arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 )
 
-abs_path_to_func = os.path.join(get_repo_root(), "functions/smart-scaler/src")
+abs_path_to_func = os.path.join(get_repo_root(), "functions/smart-scaler/build_dist")
 pulumi.log.info(f"Packing Lambda from: {abs_path_to_func}")
 
 prometheus_url = master_private_ip.apply(lambda ip: f"http://{ip}:30090/prometheus")
