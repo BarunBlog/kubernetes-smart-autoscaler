@@ -1,5 +1,7 @@
 import os
 import json
+from asyncio import timeout
+
 import pulumi
 import base64
 import pulumi_aws as aws
@@ -206,6 +208,8 @@ scaling_lambda = aws.lambda_.Function("cluster-autoscaler",
         security_group_ids=[security_group_id],
     ),
     code=pulumi.FileArchive(abs_path_to_func),
+    memory_size=256,
+    timeout=30,
     environment={
         "variables": {
             "PROMETHEUS_URL": prometheus_url,
