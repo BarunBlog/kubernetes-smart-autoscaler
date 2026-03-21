@@ -17,24 +17,17 @@
   register: master_ip
   changed_when: false
 
-- name: Upload Cluster Info to S3 for Autoscaler
-  shell: |
-    echo "{{ master_ip.stdout }}|{{ k3s_token.stdout }}" > /tmp/cluster_info
-    /usr/local/bin/aws s3 cp /tmp/cluster_info "s3://{{ s3_bucket_name }}/cluster_info"
-
-- name: Prepare Kubeconfig for Autoscaler
-  shell: |
-    # Copy the kube config to a temp location
-    cp /etc/rancher/k3s/k3s.yaml /tmp/k3s-autoscaler.yaml
-    # Replace localhost with the Master's Private IP so Lambda can connect
-    sed -i "s/127.0.0.1/{{ master_ip.stdout }}/g" /tmp/k3s-autoscaler.yaml
-    chmod 644 /tmp/k3s-autoscaler.yaml
-
 - name: Upload Cluster Info and Kubeconfig to S3
   shell: |
     echo "{{ master_ip.stdout }}|{{ k3s_token.stdout }}" > /tmp/cluster_info
     /usr/local/bin/aws s3 cp /tmp/cluster_info "s3://{{ s3_bucket_name }}/cluster_info"
     /usr/local/bin/aws s3 cp /tmp/k3s-autoscaler.yaml "s3://{{ s3_bucket_name }}/kubeconfig"
+
+- name: Prepare Kubeconfig for Autoscaler
+  shell: |
+    cp /etc/rancher/k3s/k3s.yaml /tmp/k3s-autoscaler.yaml
+    sed -i "s/127.0.0.1/{{ master_ip.stdout }}/g" /tmp/k3s-autoscaler.yaml
+    chmod 644 /tmp/k3s-autoscaler.yaml
 
 - name: Cleanup temporary files on Master
   file:
