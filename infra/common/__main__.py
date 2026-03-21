@@ -213,7 +213,14 @@ security_group = aws.ec2.SecurityGroup("k3s-instance-sec-grp",
             "to_port": 30090,
             "security_groups": [alb_security_group.id], # Allow the ALB specifically
             "description": "Allow traffic from ALB to Master Node",
-        }
+        },
+        {
+            "protocol": "tcp",
+            "from_port": 30090,
+            "to_port": 30090,
+            "self": True,
+            "description": "Allow internal VPC traffic (Lambda) to Prometheus NodePort",
+        },
     ],
     egress=[{
         "protocol": "-1",
