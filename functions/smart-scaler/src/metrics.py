@@ -2,7 +2,6 @@ import requests
 import os
 import logging
 from requests.auth import HTTPBasicAuth
-import socket
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -15,34 +14,12 @@ class PrometheusClient:
         # Get these from your Lambda Environment variables
         self.user = os.environ.get("PROMETHEUS_USER", "admin")
         self.password = os.environ.get("PROMETHEUS_PASSWORD")
+        self.headers = {"Host": "prometheus.internal"}
+        self.auth = HTTPBasicAuth(self.user, self.password)
 
     def is_ready(self) -> bool:
-        target_host = self.url.split("//")[-1].split(":")[0]
-        target_port = 30080
-
-        print(f"--- NETWORK PROBE START ---")
-        print(f"Testing connectivity to: {target_host}:{target_port}")
-
-        # 1. DNS CHECK
         try:
-            ip = socket.gethostbyname(target_host)
-            print(f"DNS Success: {target_host} resolved to {ip}")
-        except Exception as e:
-            print(f"DNS FAILURE: Could not resolve {target_host}. Error: {e}")
-
-        # 2. RAW TCP SOCKET CHECK (Security Group Check)
-        try:
-            s = socket.create_connection((target_host, target_port), timeout=3)
-            print(f"TCP Success: Port {target_port} is OPEN on {target_host}")
-            s.close()
-        except Exception as e:
-            print(f"TCP FAILURE: Port {target_port} is CLOSED or TIMEOUT. Check Security Groups. Error: {e}")
-
-        # 3. HTTP AUTH CHECK
-        try:
-            auth = HTTPBasicAuth(self.user, self.password)
-            headers = {"Host": "prometheus.internal"}
-            response = requests.get(f"{self.url}/-/healthy", auth=auth, headers=headers, timeout=5)
+            response = requests.get(f"{self.url}/-/healthy", auth=self.auth, headers=self.headers, timeout=5)
             print(f"HTTP Response Code: {response.status_code}")
             print(f"HTTP Body: {response.text[:50]}")
             return response.status_code == 200
@@ -52,7 +29,13 @@ class PrometheusClient:
 
     def query_metric(self, promql_query):
         try:
-            response = requests.get(f"{self.url}/api/v1/query", params={'query': promql_query}, timeout=10)
+            response = requests.get(
+                f"{self.url}/api/v1/query",
+                params={'query': promql_query},
+                auth=self.auth,
+                headers=self.headers,
+                timeout=10
+            )
             response.raise_for_status()
             data = response.json()
 
