@@ -213,7 +213,7 @@ scaling_lambda = aws.lambda_.Function("cluster-autoscaler",
     ),
     code=pulumi.FileArchive(abs_path_to_func),
     memory_size=256,
-    timeout=30,
+    timeout=300, # 5 minutes
     environment={
         "variables": {
             "PROMETHEUS_URL": prometheus_url,
