@@ -164,8 +164,30 @@ class SmartScaler:
             logger.warning("No worker nodes found to scale down.")
             return
 
-        instance_id: str = target_node['instance_id']
         node_name: str = target_node['name']
+
+        # Convert Node Name to Real AWS Instance ID
+        try:
+            ec2 = boto3.client('ec2')
+            # We filter by Private DNS Name because K3s names nodes after their DNS
+            dns_query = ec2.describe_instances(
+                Filters=[{'Name': 'private-dns-name', 'Values': [f"{node_name}.ap-southeast-1.compute.internal"]}]
+            )
+
+            # If the above fails, try filtering by Private IP (more robust)
+            if not dns_query['Reservations']:
+                ip_addr = node_name.replace('ip-', '').replace('-', '.')
+                dns_query = ec2.describe_instances(
+                    Filters=[{'Name': 'private-ip-address', 'Values': [ip_addr]}]
+                )
+
+            instance_id = dns_query['Reservations'][0]['Instances'][0]['InstanceId']
+            logger.info(f"Mapped node {node_name} to AWS Instance ID: {instance_id}")
+
+        except Exception as e:
+            logger.error(f"Failed to resolve AWS Instance ID for {node_name}: {e}")
+            return
+        # -----------------------------------------------------------
 
         logger.info(f"Applying Scaling Down")
 
