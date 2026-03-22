@@ -13,7 +13,7 @@ spec:
   rules:
     - host: {{ alb_dns_name }}
       http:
-        paths:
+        paths: &prometheus_path
           - path: /prometheus
             pathType: Prefix
             backend:
@@ -21,3 +21,6 @@ spec:
                 name: prometheus-kube-prometheus-prometheus
                 port:
                   number: 9090
+    - host: {{ master_private_ip }} # Internal traffic from Lambda
+      http:
+        paths: *prometheus_path
