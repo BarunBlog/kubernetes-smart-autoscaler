@@ -25,23 +25,24 @@ jobs:
         run: |
           cd functions/smart-scaler
 
+          # Clean up any previous failed attempts
+          rm -rf build_dist && mkdir build_dist
+
           # Install dependencies using a Lambda-compliant OS (Amazon Linux 2023)
           # We use the 'root' user inside Docker to install into the mounted /var/task
           docker run --rm -v $(pwd):/var/task public.ecr.aws/sam/build-python3.11:latest \
-            pip install -r requirements.txt -t ./src/
+            pip install -r requirements.txt -t ./build_dist/
 
-          # FIX PERMISSIONS
-          # Reclaim ownership of the files from the 'root' docker user
-          sudo chown -R $USER:$USER ./src
+          # Copy actual code into the same folder
+          cp -r src/* ./build_dist/
 
-          # PRODUCTION CLEANUP
-          # Remove compilation artifacts and metadata that aren't needed at runtime
-          find ./src -type d -name "__pycache__" -exec rm -rf {} +
-          find ./src -type d -name "*.dist-info" -exec rm -rf {} +
-          find ./src -type d -name "*.egg-info" -exec rm -rf {} +
+          # Production Cleanup (Ownership & Trash)
+          sudo chown -R $USER:$USER ./build_dist
+          find ./build_dist -type d -name "__pycache__" -exec rm -rf {} +
+          find ./build_dist -type d -name "*.dist-info" -exec rm -rf {} +
 
-          # Final check: Ensure the folder is clean but contains the libs
-          ls -F ./src
+          # Verify the entry point exists
+          ls ./build_dist/main.py
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
