@@ -16,8 +16,8 @@ spec:
     - host: {{ alb_dns_name }}
       http:
         paths: &prometheus_path
-          - path: /prometheus
-            pathType: Prefix
+          - path: /prometheus/?(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: prometheus-kube-prometheus-prometheus
