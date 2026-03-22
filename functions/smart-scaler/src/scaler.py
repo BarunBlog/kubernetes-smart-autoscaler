@@ -233,6 +233,15 @@ class SmartScaler:
                 InstanceId=instance_id,
                 ShouldDecrementDesiredCapacity=True
             )
+
+            # Final Step: Remove the node from K8s API so pods reschedule immediately
+            logger.info(f"Removing node {node_name} from Kubernetes API")
+            try:
+                self.k8s_api.delete_node(node_name)
+                logger.info(f"Node {node_name} successfully deleted from cluster.")
+            except ApiException as e:
+                if e.status != 404:
+                    logger.error(f"Failed to delete node object: {e}")
         except ApiException as e:
             logger.error(f"K8s Cordon failed for {node_name}: {e}")
         except ClientError as e:
