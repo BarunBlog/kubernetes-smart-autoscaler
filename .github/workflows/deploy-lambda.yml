@@ -53,7 +53,7 @@ jobs:
 
       - name: Zip Bundle
         run: |
-          cd functions/smart-scaler/src
+          cd functions/smart-scaler/build_dist
           zip -r ../../../deploy.zip .
 
       - name: Pulumi login
