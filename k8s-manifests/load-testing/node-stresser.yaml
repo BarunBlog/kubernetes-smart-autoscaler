@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cpu-stresser
+  namespace: development
+spec:
+  parallelism: 6
+  template:
+    spec:
+      containers:
+      - name: stress
+        image: alexeiled/stress-ng
+        args: ["--cpu", "4", "--timeout", "600s", "--metrics-brief"]
+        resources:
+          requests:
+            cpu: "500m"
+          limits:
+            cpu: "1000m"
+      restartPolicy: Never

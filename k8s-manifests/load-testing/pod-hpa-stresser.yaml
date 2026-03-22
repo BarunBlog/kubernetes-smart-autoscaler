@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: omni-load-generator
+  namespace: development
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+      - name: wget-loop
+        image: busybox
+        command: ["/bin/sh", "-c"]
+        args:
+          - "while true; do wget --post-data='' -q -O- http://order-service:80/order; echo 'Request Sent'; sleep 0.01; done"
