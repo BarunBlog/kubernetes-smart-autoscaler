@@ -62,7 +62,6 @@ jobs:
         run: |
           # Use sed to replace the placeholder in all ingress files inside the directory
           find ./k8s-manifests/ingress -type f -name "*.yaml" -exec sed -i "s/{{ alb_dns_name }}/${{ env.ALB_DNS }}/g" {} +
-          find ./k8s-manifests/ingress -type f -name "*.yaml" -exec sed -i "s/{{ master_private_ip }}/${{ env.MASTER_NODE_IP }}/g" {} +
           
           # Inject Lambda URL into the lambda trigger manifest
           sed -i "s|{{ lambda_url }}|${{ env.LAMBDA_URL }}|g" ./k8s-manifests/autoscaler/lambda-trigger.yaml

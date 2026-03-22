@@ -21,6 +21,6 @@ spec:
                 name: prometheus-kube-prometheus-prometheus
                 port:
                   number: 9090
-    - host: {{ master_private_ip }} # Internal traffic from Lambda
+    - host: prometheus.internal # Internal traffic from Lambda
       http:
         paths: *prometheus_path

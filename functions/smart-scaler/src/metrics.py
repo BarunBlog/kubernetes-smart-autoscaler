@@ -41,7 +41,8 @@ class PrometheusClient:
         # 3. HTTP AUTH CHECK
         try:
             auth = HTTPBasicAuth(self.user, self.password)
-            response = requests.get(f"{self.url}/-/healthy", auth=auth, timeout=5)
+            headers = {"Host": "prometheus.internal"}
+            response = requests.get(f"{self.url}/-/healthy", auth=auth, headers=headers, timeout=5)
             print(f"HTTP Response Code: {response.status_code}")
             print(f"HTTP Body: {response.text[:50]}")
             return response.status_code == 200
