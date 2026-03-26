@@ -28,6 +28,8 @@ common_project_name = config.require('common-project-name')
 master_project_name = config.require('master-project-name')
 min_nodes = int(config.require("min-nodes"))
 max_nodes = int(config.require("max-nodes"))
+scale_up_cooldown = int(config.require("scale-up-cooldown"))
+scale_down_cooldown = int(config.require("scale-down-cooldown"))
 
 # Construct the reference string to access exported variables from common project
 common_ref_name = f"{current_org}/{common_project_name}/{current_stack}"
@@ -224,6 +226,8 @@ scaling_lambda = aws.lambda_.Function("cluster-autoscaler",
             "ASG_NAME": worker_asg.name,
             "MIN_NODES": min_nodes,
             "MAX_NODES": max_nodes,
+            "SCALE_UP_COOLDOWN": scale_up_cooldown,
+            "SCALE_DOWN_COOLDOWN": scale_down_cooldown,
         }
     },
     opts=pulumi.ResourceOptions(depends_on=[vpc_access_policy_attachment])

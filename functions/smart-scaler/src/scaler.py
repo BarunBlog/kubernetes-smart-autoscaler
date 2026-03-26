@@ -8,12 +8,21 @@ from kubernetes import client, config
 from kubernetes.client.models import V1Node
 from kubernetes.client.rest import ApiException
 
+from src.state_manager import StateManager
+
 logger = logging.getLogger(__name__)
 
 class SmartScaler:
-    def __init__(self, kubeconfig_path: str):
+    def __init__(self, kubeconfig_path: str, state_manager: StateManager):
         self.asg_client = boto3.client('autoscaling')
         self.asg_name = os.environ['ASG_NAME']
+
+        # Inject the existing state manager
+        self.state_manager = state_manager
+
+        # Cooldown Configurations (in seconds)
+        self.scale_up_cooldown = int(os.environ.get('SCALE_UP_COOLDOWN', 300)) # 5 mins
+        self.scale_down_cooldown = int(os.environ.get('SCALE_DOWN_COOLDOWN', 600)) # 10 mins
 
         self.min_nodes = int(os.environ.get('MIN_NODES', 2))
         self.max_nodes = int(os.environ.get('MAX_NODES', 5))
@@ -25,8 +34,6 @@ class SmartScaler:
         # Thresholds
         self.scale_up_cpu = 70.0
         self.scale_down_cpu = 30.0
-
-        # Eviction
 
     def get_current_capacity(self):
         """Fetches the current Desired Capacity from AWS ASG."""
@@ -118,8 +125,17 @@ class SmartScaler:
         current = self.get_current_capacity()
         logger.debug(f"Current Desired Capacity: {current}")
 
+        # Check Cooldown
+        last_action_time = self.state_manager.get_last_scaling_time()
+        seconds_since_last = int(time.time()) - last_action_time
+
         # Scale Up (High CPU or Pending Pods)
         if cpu_utilization > self.scale_up_cpu or pending_pods_count > 0:
+            if seconds_since_last < self.scale_up_cooldown:
+                logger.warn(f"Too early to apply Scale-up")
+                logger.info(f"Scale-up blocked by cooldown ({seconds_since_last}s < {self.scale_up_cooldown}s)")
+                return current
+
             if current < self.max_nodes:
                 target = current + 1
                 logger.info(
@@ -130,6 +146,11 @@ class SmartScaler:
 
         # Scale Down (Low CPU or no Pending Pods)
         elif cpu_utilization < self.scale_down_cpu and pending_pods_count == 0:
+            if seconds_since_last < self.scale_down_cooldown:
+                logger.warn(f"Too early to apply Scale-down")
+                logger.info(f"Scale-down blocked by cooldown ({seconds_since_last}s < {self.scale_down_cooldown}s)")
+                return current
+
             if current > self.min_nodes:
                 target = current - 1
                 logger.info(f"Decision: SCALE_DOWN to {target}. Reason: CPU={cpu_utilization}%")
@@ -141,8 +162,10 @@ class SmartScaler:
         """Executes the scaling command in AWS."""
         if new_capacity > current_capacity:
             self._scale_up(new_capacity)
+            self.state_manager.update_scaling_timestamp()
         elif new_capacity < current_capacity:
             self._scale_down_graceful()
+            self.state_manager.update_scaling_timestamp()
 
     def _scale_up(self, target):
         logger.info(f"Applying Scaling UP to {target}")

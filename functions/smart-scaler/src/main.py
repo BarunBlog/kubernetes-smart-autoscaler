@@ -42,7 +42,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             logger.warning("Prometheus is not reachable. Cluster might be bootstrapping. Skipping check.")
             return {"status": "skipped", "message": "Prometheus offline"}
 
-        scaler = SmartScaler(kubeconfig_path)
+        scaler = SmartScaler(kubeconfig_path, state_manager)
 
         # Fetching Metrics
         cpu_usage = metrics_client.get_avg_cpu()

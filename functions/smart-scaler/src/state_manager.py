@@ -70,3 +70,41 @@ class StateManager:
             logger.info("Scaling lock released.")
         except ClientError as e:
             logger.error(f"Failed to release lock: {e}")
+
+    def get_last_scaling_time(self) -> int:
+        """Fetch the timestamp of the last successful scaling action."""
+        try:
+            # Fetch only the 'timestamp' attribute to save bandwidth/RCUs
+            response = self.table.get_item(
+                Key={'LockID': 'last_scaling_event'},
+                ProjectionExpression="#ts",
+                ExpressionAttributeNames={"#ts": "timestamp"}
+            )
+
+            item = response.get('Item')
+            if not item:
+                logger.info("No previous scaling event found in DynamoDB. Starting fresh.")
+                return 0
+
+            return int(item.get('timestamp', 0))
+        except ClientError as e:
+            logger.error(f"DynamoDB ClientError fetching scaling time: {e.response['Error']['Message']}")
+            return 0
+
+    def update_scaling_timestamp(self):
+        """Record that a scaling action just happened right now."""
+        now = int(time.time())
+        logger.info(f"[DynamoDB] Received command to save the scaling timestamp to {now}")
+
+        try:
+            self.table.put_item(
+                Item={
+                    'LockID': 'last_scaling_event',
+                    'timestamp': int(time.time())
+                }
+            )
+            logger.info(f"Successfully updated last scaling timestamp to {now}")
+        except ClientError as e:
+            logger.error(f"Failed to record scaling event in DynamoDB: {e.response['Error']['Message']}")
+        except Exception as e:
+            logger.critical(f"Unexpected system failure while updating DynamoDB: {e}", exc_info=True)

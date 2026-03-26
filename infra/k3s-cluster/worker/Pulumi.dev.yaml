@@ -4,6 +4,8 @@ config:
   k3s-worker-and-asg:ami: "ami-060e277c0d4cce553"
   k3s-worker-and-asg:min-nodes: 2
   k3s-worker-and-asg:max-nodes: 5
+  k3s-worker-and-asg:scale-up-cooldown: 300  # 5 mins
+  k3s-worker-and-asg:scale-down-cooldown: 600 # 10 mins
 
   k3s-worker-and-asg:common-project-name: "common-infra"
   k3s-worker-and-asg:master-project-name: "k3s-master"
