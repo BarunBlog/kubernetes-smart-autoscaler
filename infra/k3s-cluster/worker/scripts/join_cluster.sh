@@ -32,5 +32,8 @@ K3S_TOKEN=$(cut -d'|' -f2 /tmp/cluster_info)
 echo "Master IP: $MASTER_IP"
 echo "Joining cluster..."
 
-# Join command with verbose flag
-curl -sfL https://get.k3s.io | K3S_URL=https://${MASTER_IP}:6443 K3S_TOKEN=${K3S_TOKEN} sh -s - agent
+# Join command with verbose flag and worker labeling
+curl -sfL https://get.k3s.io | \
+  K3S_URL=https://${MASTER_IP}:6443 \
+  K3S_TOKEN=${K3S_TOKEN} \
+  sh -s - agent --node-label "node-role.kubernetes.io/worker=true"

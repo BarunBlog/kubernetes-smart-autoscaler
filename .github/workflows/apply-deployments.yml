@@ -141,9 +141,6 @@ jobs:
             # Add the prometheus repository
             helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
             helm repo update
-          
-            # Label all nodes that aren't the control-plane as workers
-            kubectl label nodes -l "!node-role.kubernetes.io/control-plane" node-role.kubernetes.io/worker=true --overwrite
             
             # Prometheus and grafana will be installed in the worker node
             helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
