@@ -31,6 +31,8 @@ spec:
 
         template:
           spec:
+            nodeSelector:
+              node-role.kubernetes.io/worker: "true"
             # give RabbitMQ time to move data before the node is hard-deleted
             terminationGracePeriodSeconds: 300
 
@@ -44,14 +46,16 @@ spec:
 
   affinity:
     podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-              - key: app.kubernetes.io/name
-                operator: In
-                values:
-                  - rabbitmq
-          topologyKey: "kubernetes.io/hostname"
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100 # High weight means "Try really hard to stay separate"
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - rabbitmq
+            topologyKey: "kubernetes.io/hostname"
 
   resources:
     requests:

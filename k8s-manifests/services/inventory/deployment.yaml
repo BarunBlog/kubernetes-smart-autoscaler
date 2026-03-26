@@ -20,6 +20,8 @@ spec:
         app: inventory-app
 
     spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker: "true"
       containers:
         - name: inventory-service
           image: barun25/choreography-saga-inventory-service:latest

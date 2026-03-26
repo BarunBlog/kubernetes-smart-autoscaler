@@ -135,6 +135,10 @@ jobs:
             helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
               --namespace ingress-nginx --create-namespace \
               -f helm/ingress-nginx/values-prod.yaml
+            
+            # AUTO-TAINT THE MASTER: Stop apps from landing into master nodes
+            # We use --overwrite so it doesn't fail if the taint already exists
+            kubectl taint nodes ${{ env.MASTER_NODE_IP }} node-role.kubernetes.io/control-plane:NoSchedule --overwrite || true
           
             # ----------------------------------- Install Prometheus & Grafana -----------------------------------------
             
@@ -147,6 +151,8 @@ jobs:
               --namespace monitoring --create-namespace \
               --set-string "prometheus.prometheusSpec.nodeSelector.node-role\.kubernetes\.io/worker=true" \
               --set-string "grafana.nodeSelector.node-role\.kubernetes\.io/worker=true" \
+              --set-string "prometheusOperator.nodeSelector.node-role\.kubernetes\.io/worker=true" \
+              --set-string "alertmanager.alertmanagerSpec.nodeSelector.node-role\.kubernetes\.io/worker=true" \
               --set prometheus.prometheusSpec.retention=7d \
               --set prometheus.prometheusSpec.externalUrl="http://${{env.ALB_DNS}}/prometheus" \
               --set prometheus.prometheusSpec.routePrefix="/prometheus" \

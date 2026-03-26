@@ -20,6 +20,8 @@ spec:
         app: payment-app
 
     spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker: "true"
       containers:
         - name: payment-service
           image: barun25/choreography-saga-payment-service:latest

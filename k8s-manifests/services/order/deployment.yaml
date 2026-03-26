@@ -20,6 +20,8 @@ spec:
         app: order-app
 
     spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker: "true"
       containers:
         - name: order-service
           image: barun25/choreography-saga-order-service:latest
