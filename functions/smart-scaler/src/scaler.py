@@ -7,8 +7,7 @@ from botocore.exceptions import ClientError
 from kubernetes import client, config
 from kubernetes.client.models import V1Node
 from kubernetes.client.rest import ApiException
-
-from src.state_manager import StateManager
+from state_manager import StateManager
 
 logger = logging.getLogger(__name__)
 
