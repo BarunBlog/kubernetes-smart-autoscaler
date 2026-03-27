@@ -21,7 +21,7 @@ spec:
 
     spec:
       nodeSelector:
-        node-role.kubernetes.io/worker: "true"
+        worker-type: "worker"
       containers:
         - name: order-service
           image: barun25/choreography-saga-order-service:latest

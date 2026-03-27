@@ -21,7 +21,7 @@ spec:
 
     spec:
       nodeSelector:
-        node-role.kubernetes.io/worker: "true"
+        worker-type: "worker"
       containers:
         - name: inventory-service
           image: barun25/choreography-saga-inventory-service:latest

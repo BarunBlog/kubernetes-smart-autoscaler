@@ -21,7 +21,7 @@ spec:
 
     spec:
       nodeSelector:
-        node-role.kubernetes.io/worker: "true"
+        worker-type: "worker"
       containers:
         - name: notification-service
           image: barun25/choreography-saga-notification-service:latest
