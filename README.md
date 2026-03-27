@@ -165,7 +165,7 @@ The deployment process involves the following steps:
 ### GitHub Actions:
 The following GitHub actions are given in order. They also run in order. But in some cases they don't run automatically. If not then there are a dispatch option too so you can deploy them manually.
 1. **infra.yml**: A GitHub Actions workflow is triggered by a push event to the `master` branch and only selected directory which setup necessary AWS infrastructure, also you trigger with the `dispatch`.
-2. **setup-git-runner.yml**: Installs `Ansible` to the Git Runner Instance. Must need `GIT_RUNNER_TOKEN` in the GitHub secrets. If that Action fails then you need to update your `GIT_RUNNER_TOKEN`.
+2. **setup-git-runner.yml**: Installs `Ansible` to the Git Runner Instance. Must need `GH_PAT` in the GitHub secrets. You can create it from your GitHub profile => `Settings` => `Developer Settings` => `Personal access tokens` => `Fine-grained tokens` => `Generate new Token`
 3. **k3s-deploy.yml**: Installs k3s cluster to the Master Node using `Ansible`.
 4. **autoscaler-deploy.yml**: This action installs the Auto Scaling Group, Worker Nodes, Lambda, DynamoDB, and Worker Nodes joins the cluster dynamically.
 5. **apply-deployments**: This action file applies all manifests including deployment, ingress, services, rabbitmq cluster to the k3s cluster. Also installs Prometheus and Grafana using `Helm`.
@@ -177,7 +177,6 @@ Set up the following environment variables in GitHub into your repository. Go to
 AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
 ENVIRONMENT
-GIT_RUNNER_TOKEN
 GRAFANA_PASSWORD
 PROMETHEUS_PASSWORD
 PUBLIC_KEY
