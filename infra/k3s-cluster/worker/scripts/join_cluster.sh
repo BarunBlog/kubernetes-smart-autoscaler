@@ -36,4 +36,6 @@ echo "Joining cluster..."
 curl -sfL https://get.k3s.io | \
   K3S_URL=https://${MASTER_IP}:6443 \
   K3S_TOKEN=${K3S_TOKEN} \
-  sh -s - agent --node-label "worker=true"
+  sh -s - agent \
+  --kubelet-arg="node-labels=node-role.kubernetes.io/worker=true" \
+  --node-label "worker=true"
