@@ -34,6 +34,29 @@ SmartScale is a production-grade, automated scaling system designed for a high-t
 
 - **Messaging:** RabbitMQ (Event-Driven Architecture)
 
+## The Traffic Flow (Request Journey)
+To understand how the system works, follow a single request from a user:
+
+![GitHub Logo](docs/diagrams/diagram-export-3-31-2026-8_23_34-PM.png)
+
+- **Step 1: The Client:** A user clicks "Order" on their phone. The request hits the AWS ALB via a public URL.
+- **Step 2: The ALB:** The ALB forwards the traffic to a specific NodePort on any available Worker Node.
+- **Step 3: Ingress-Nginx:** Inside the cluster, the Ingress Controller looks at the URL (e.g., /order) and decides which service needs to handle it.
+- **Step 4: The Service:** The Kubernetes Service acts as an internal load balancer, picking one healthy Pod out of the many running.
+- **Step 5: The Pod:** The request finally reaches the backend container inside the Pod.
+- **Step 6: The Event:** If the order is successful, the pod sends a message to RabbitMQ.
+
+**Services:**
+
+![GitHub Logo](docs/diagrams/choreography_saga_flow.png)
+
+- **Order Service:** Creates new orders and publishes order.created events.
+- **Payment Service:** Listens for order.created, processes payment, and publishes payment.completed.
+- **Inventory Service:** Listens for payment.completed, updates inventory, and publishes inventory.updated.
+- **Notification Service:** Listens for inventory.updated and sends a notification.
+
+All services communicate only through RabbitMQ using direct exchanges and routing keys.
+
 
 ## Infrastructure Setup
 ### Prerequisites
@@ -286,12 +309,11 @@ To verify the scaling logic, use the provided stresser scripts in `k8s-manifests
 
 ## High-Level Design (HLD)
 For a deep dive into the system architecture, data flow, and networking topology, please refer to the **Detailed HLD Documentation** located in the docs/ directory.
-(**Note:** HLD diagrams and architectural deep-dives are soon uploaded in the docs/ path.)
 
 ## Conclusion
 The **SmartScale K3s Autoscaler** effectively addresses the "Scale-Out vs. Cost" dilemma faced by modern startups. By moving away from a fixed 5-node setup to a dynamic, metric-driven architecture, this project achieves:
 
-1. **Efficiency:** Reduces monthly infrastructure costs by up to 30-40% by scaling down to a 2-node minimum during off-peak hours (9 PM - 9 AM).
+1. **Efficiency:** Reduces monthly infrastructure costs by up to 40-50% by scaling down to a 2-node minimum during off-peak hours (9 PM - 9 AM).
 
 2. **Resilience:** Eliminates manual scaling delays (15-20 mins) by responding to traffic surges in under 3 minutes, preventing the service crashes experienced during previous flash sales.
 
